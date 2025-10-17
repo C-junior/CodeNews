@@ -170,7 +170,6 @@
 
   - [x] 8.4 Otimizar interface e responsividade
 
-
     - Ajustar layout para dispositivos móveis
     - Implementar estados de loading
     - Adicionar transições suaves entre telas

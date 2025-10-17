@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
+  <div class="min-h-screen bg-neutral-50 flex">
     <!-- Mobile Menu Overlay -->
     <div 
       v-if="isMobileMenuOpen" 
@@ -18,23 +18,20 @@
       <div class="p-4 lg:p-6 h-full overflow-y-auto">
         <!-- Mobile Close Button -->
         <div class="flex justify-between items-center mb-6 lg:mb-8">
-          <div class="flex items-center">
-            <div class="w-6 h-6 lg:w-8 lg:h-8 bg-codenews-blue rounded-lg mr-2 lg:mr-3"></div>
-            <h1 class="text-lg lg:text-xl font-bold text-codenews-blue">CodeNews</h1>
-          </div>
+          <CodeNewsLogo :size="isMobile ? 'small' : 'medium'" />
           <button 
             @click="closeMobileMenu"
-            class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
+            class="lg:hidden p-2 rounded-md text-neutral-400 hover:text-neutral-600"
           >
             <XMarkIcon class="w-5 h-5" />
           </button>
         </div>
 
         <!-- User Info -->
-        <div class="mb-6 lg:mb-8 p-3 lg:p-4 bg-gray-50 rounded-lg">
-          <div class="text-xs lg:text-sm text-gray-600">Usuário</div>
+        <div class="mb-6 lg:mb-8 p-3 lg:p-4 bg-neutral-50 rounded-lg">
+          <div class="text-xs lg:text-sm text-neutral-600">Usuário</div>
           <div class="font-medium text-sm lg:text-base truncate">{{ authStore.currentUser?.name || authStore.currentUser?.username }}</div>
-          <div class="text-xs text-gray-500 capitalize">{{ getRoleLabel(authStore.currentUser?.role) }}</div>
+          <div class="text-xs text-neutral-500 capitalize">{{ getRoleLabel(authStore.currentUser?.role) }}</div>
         </div>
 
         <!-- Navigation Menu -->
@@ -47,8 +44,8 @@
             :class="[
               'flex items-center px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium rounded-lg transition-all duration-200',
               $route.path === item.path
-                ? 'bg-codenews-blue text-white shadow-md'
-                : 'text-gray-700 hover:bg-gray-100 hover:text-codenews-blue'
+                ? 'bg-primary text-white shadow-md'
+                : 'text-neutral-700 hover:bg-neutral-100 hover:text-primary'
             ]"
           >
             <component :is="item.icon" class="w-4 h-4 lg:w-5 lg:h-5 mr-2 lg:mr-3 flex-shrink-0" />
@@ -57,7 +54,7 @@
         </nav>
 
         <!-- Logout Button -->
-        <div class="mt-6 lg:mt-8 pt-6 lg:pt-8 border-t border-gray-200">
+        <div class="mt-6 lg:mt-8 pt-6 lg:pt-8 border-t border-neutral-200">
           <button
             @click="handleLogout"
             class="flex items-center w-full px-3 lg:px-4 py-2 lg:py-3 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200"
@@ -72,26 +69,26 @@
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Top Bar with Breadcrumbs -->
-      <header class="bg-white shadow-sm border-b border-gray-200">
+      <header class="bg-white shadow-sm border-b border-neutral-200">
         <div class="px-4 lg:px-6 py-3 lg:py-4">
           <div class="flex items-center justify-between">
             <!-- Mobile Menu Button -->
             <button 
               @click="openMobileMenu"
-              class="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 transition-colors"
+              class="lg:hidden p-2 rounded-md text-neutral-400 hover:text-neutral-600 transition-colors"
             >
               <Bars3Icon class="w-5 h-5" />
             </button>
 
             <!-- Breadcrumbs -->
-            <nav class="flex items-center space-x-2 text-sm text-gray-600">
-              <router-link to="/" class="hover:text-codenews-blue transition-colors hidden sm:block">Início</router-link>
+            <nav class="flex items-center space-x-2 text-sm text-neutral-600">
+              <router-link to="/" class="hover:text-primary transition-colors hidden sm:block">Início</router-link>
               <ChevronRightIcon class="w-4 h-4 hidden sm:block" />
-              <span class="text-gray-900 font-medium">{{ currentModuleLabel }}</span>
+              <span class="text-neutral-900 font-medium">{{ currentModuleLabel }}</span>
             </nav>
 
             <!-- User info for mobile -->
-            <div class="lg:hidden text-xs text-gray-600">
+            <div class="lg:hidden text-xs text-neutral-600">
               {{ authStore.currentUser?.name || authStore.currentUser?.username }}
             </div>
           </div>
@@ -122,11 +119,9 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoadingSpinner from '@/components/shared/LoadingSpinner.vue'
+import CodeNewsLogo from '@/components/shared/CodeNewsLogo.vue'
 
 // Icons (using simple SVG icons for now)
-const HomeIcon = {
-  template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 21V7a2 2 0 012-2h4a2 2 0 012 2v14"></path></svg>`
-}
 
 const UsersIcon = {
   template: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path></svg>`
@@ -167,6 +162,7 @@ const authStore = useAuthStore()
 const isMobileMenuOpen = ref(false)
 const isLoading = ref(false)
 const loadingText = ref('')
+const isMobile = computed(() => window.innerWidth < 1024)
 
 // Mobile menu functions
 const openMobileMenu = () => {

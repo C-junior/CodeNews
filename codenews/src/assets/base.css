@@ -1,52 +1,75 @@
-/* color palette from <https://github.com/vuejs/theme> */
+/* CodeNews Color Palette */
 :root {
-  --vt-c-white: #ffffff;
-  --vt-c-white-soft: #f8f8f8;
-  --vt-c-white-mute: #f2f2f2;
+  /* Paleta principal */
+  --codenews-primary: #1E40AF;
+  --codenews-secondary: #16A34A;
+  --codenews-white: #FFFFFF;
+  --codenews-gray: #F8FAFC;
 
-  --vt-c-black: #181818;
-  --vt-c-black-soft: #222222;
-  --vt-c-black-mute: #282828;
+  /* Variações do azul primário */
+  --codenews-primary-light: #3B82F6;
+  --codenews-primary-dark: #1E3A8A;
+  --codenews-primary-50: #EFF6FF;
+  --codenews-primary-100: #DBEAFE;
 
-  --vt-c-indigo: #2c3e50;
+  /* Variações do verde secundário */
+  --codenews-secondary-light: #22C55E;
+  --codenews-secondary-dark: #15803D;
+  --codenews-secondary-50: #F0FDF4;
+  --codenews-secondary-100: #DCFCE7;
 
-  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
-  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
-  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
-  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+  /* Tons de cinza */
+  --codenews-gray-50: #F8FAFC;
+  --codenews-gray-100: #F1F5F9;
+  --codenews-gray-200: #E2E8F0;
+  --codenews-gray-300: #CBD5E1;
+  --codenews-gray-400: #94A3B8;
+  --codenews-gray-500: #64748B;
+  --codenews-gray-600: #475569;
+  --codenews-gray-700: #334155;
+  --codenews-gray-800: #1E293B;
+  --codenews-gray-900: #0F172A;
 
-  --vt-c-text-light-1: var(--vt-c-indigo);
-  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
-  --vt-c-text-dark-1: var(--vt-c-white);
-  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+  /* Divisores e bordas */
+  --codenews-border-light: rgba(30, 64, 175, 0.1);
+  --codenews-border-medium: rgba(30, 64, 175, 0.2);
+  --codenews-divider: var(--codenews-gray-200);
+
+  /* Estados */
+  --codenews-success: var(--codenews-secondary);
+  --codenews-warning: #F59E0B;
+  --codenews-error: #EF4444;
+  --codenews-info: var(--codenews-primary);
 }
 
-/* semantic color variables for this project */
+/* Variáveis semânticas do CodeNews */
 :root {
-  --color-background: var(--vt-c-white);
-  --color-background-soft: var(--vt-c-white-soft);
-  --color-background-mute: var(--vt-c-white-mute);
+  --color-background: var(--codenews-white);
+  --color-background-soft: var(--codenews-gray-50);
+  --color-background-mute: var(--codenews-gray-100);
 
-  --color-border: var(--vt-c-divider-light-2);
-  --color-border-hover: var(--vt-c-divider-light-1);
+  --color-border: var(--codenews-border-light);
+  --color-border-hover: var(--codenews-border-medium);
 
-  --color-heading: var(--vt-c-text-light-1);
-  --color-text: var(--vt-c-text-light-1);
+  --color-heading: var(--codenews-primary);
+  --color-text: var(--codenews-gray-700);
+  --color-text-light: var(--codenews-gray-500);
 
   --section-gap: 160px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: var(--vt-c-black);
-    --color-background-soft: var(--vt-c-black-soft);
-    --color-background-mute: var(--vt-c-black-mute);
+    --color-background: var(--codenews-gray-900);
+    --color-background-soft: var(--codenews-gray-800);
+    --color-background-mute: var(--codenews-gray-700);
 
-    --color-border: var(--vt-c-divider-dark-2);
-    --color-border-hover: var(--vt-c-divider-dark-1);
+    --color-border: rgba(255, 255, 255, 0.1);
+    --color-border-hover: rgba(255, 255, 255, 0.2);
 
-    --color-heading: var(--vt-c-text-dark-1);
-    --color-text: var(--vt-c-text-dark-2);
+    --color-heading: var(--codenews-white);
+    --color-text: var(--codenews-gray-200);
+    --color-text-light: var(--codenews-gray-400);
   }
 }
 
