@@ -8,7 +8,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      redirect: '/password-selection'
     },
     // Routes with simple layout (no sidebar)
     {
@@ -30,6 +30,28 @@ const router = createRouter({
         {
           path: '',
           component: () => import('../components/modules/PatientModule.vue')
+        }
+      ]
+    },
+    {
+      path: '/password-selection',
+      name: 'password-selection',
+      component: SimpleLayout,
+      children: [
+        {
+          path: '',
+          component: () => import('../components/modules/PasswordSelection.vue')
+        }
+      ]
+    },
+    {
+      path: '/panel',
+      name: 'panel',
+      component: SimpleLayout,
+      children: [
+        {
+          path: '',
+          component: () => import('../components/modules/CallPanel.vue')
         }
       ]
     },
