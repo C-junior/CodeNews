@@ -4,12 +4,20 @@
     
     <div class="space-y-4">
       <!-- Test Controls -->
-      <div class="flex space-x-2">
+      <div class="flex flex-wrap gap-2">
         <button
           @click="createTestPatient"
-          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          :disabled="isCreatingPatient"
+          class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Criar Paciente Teste
+          {{ isCreatingPatient ? 'Criando...' : 'Criar Paciente Teste' }}
+        </button>
+        <button
+          @click="createSimpleTestPatient"
+          :disabled="isCreatingPatient"
+          class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Teste Simples
         </button>
         <button
           @click="callNextPatient"
@@ -22,6 +30,18 @@
           class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
         >
           Resetar Sistema
+        </button>
+        <button
+          @click="testStorageAccess"
+          class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+        >
+          Testar Storage
+        </button>
+        <button
+          @click="runDebugTests"
+          class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+        >
+          Debug Completo
         </button>
       </div>
 
@@ -69,6 +89,7 @@
 import { useSystemStore } from '@/stores/system'
 import { useQueueStore } from '@/stores/queue'
 import { usePatientStore } from '@/stores/patient'
+import { testBasicFunctionality, testStoreImports } from '@/utils/debugTest'
 
 export default {
   name: 'SystemIntegrationTest',
@@ -77,7 +98,8 @@ export default {
     return {
       systemStats: null,
       testResults: [],
-      testPatientCounter: 0
+      testPatientCounter: 0,
+      isCreatingPatient: false
     }
   },
   
@@ -113,25 +135,133 @@ export default {
       }
     },
     
-    createTestPatient() {
+    async createTestPatient() {
+      if (this.isCreatingPatient) return
+      
+      this.isCreatingPatient = true
+      
       try {
         this.testPatientCounter++
         
-        // Create test patient
-        const patient = this.patientStore.registerPatient({
+        console.log('Iniciando criação de paciente teste...')
+        
+        // Create test patient data
+        const patientData = {
           name: `Paciente Teste ${this.testPatientCounter}`,
           cid: 'J06.9',
           priority: Math.random() > 0.7 ? 'preferential' : 'normal'
-        })
+        }
+        
+        console.log('Dados do paciente:', patientData)
+        
+        // Create test patient
+        const patient = this.patientStore.registerPatient(patientData)
+        
+        console.log('Paciente criado:', patient)
         
         // Generate password
         const password = this.queueStore.generatePassword(patient.priority, patient.id)
+        
+        console.log('Senha gerada:', password)
         
         this.addTestResult(true, `Paciente criado: ${patient.name} - Senha: ${password.number}`)
         this.updateStats()
         
       } catch (error) {
+        console.error('Erro detalhado ao criar paciente:', error)
+        console.error('Stack trace:', error.stack)
+        console.error('Tipo do erro:', typeof error)
+        console.error('Nome do erro:', error.name)
+        console.error('Detalhes do erro:', error.details)
         this.addTestResult(false, `Erro ao criar paciente: ${error.message}`)
+      } finally {
+        this.isCreatingPatient = false
+      }
+    },
+
+    async createSimpleTestPatient() {
+      if (this.isCreatingPatient) return
+      
+      this.isCreatingPatient = true
+      
+      try {
+        console.log('=== TESTE SIMPLES INICIADO ===')
+        
+        // Test 1: Check if stores are available
+        console.log('PatientStore disponível:', !!this.patientStore)
+        console.log('QueueStore disponível:', !!this.queueStore)
+        
+        // Test 2: Try to access localStorage directly
+        console.log('LocalStorage disponível:', typeof localStorage !== 'undefined')
+        
+        // Test 3: Create minimal patient data
+        const simpleData = {
+          name: 'Teste Simples',
+          cid: '',
+          priority: 'normal'
+        }
+        
+        console.log('Dados simples:', simpleData)
+        
+        // Test 4: Try patient registration step by step
+        console.log('Tentando registrar paciente...')
+        const patient = this.patientStore.registerPatient(simpleData)
+        console.log('✅ Paciente registrado:', patient)
+        
+        // Test 5: Try password generation
+        console.log('Tentando gerar senha...')
+        const password = this.queueStore.generatePassword(patient.priority, patient.id)
+        console.log('✅ Senha gerada:', password)
+        
+        this.addTestResult(true, `✅ Teste simples OK: ${patient.name} - ${password.number}`)
+        this.updateStats()
+        
+      } catch (error) {
+        console.error('❌ Erro no teste simples:', error)
+        this.addTestResult(false, `❌ Teste simples falhou: ${error.message}`)
+      } finally {
+        this.isCreatingPatient = false
+      }
+    },
+
+    testStorageAccess() {
+      try {
+        console.log('=== TESTE DE STORAGE ===')
+        
+        // Test localStorage access
+        const testKey = 'codenews_test'
+        const testData = { test: true, timestamp: Date.now() }
+        
+        console.log('Tentando escrever no localStorage...')
+        localStorage.setItem(testKey, JSON.stringify(testData))
+        console.log('✅ Escrita OK')
+        
+        console.log('Tentando ler do localStorage...')
+        const retrieved = JSON.parse(localStorage.getItem(testKey))
+        console.log('✅ Leitura OK:', retrieved)
+        
+        console.log('Limpando teste...')
+        localStorage.removeItem(testKey)
+        console.log('✅ Limpeza OK')
+        
+        this.addTestResult(true, '✅ Storage funcionando corretamente')
+        
+      } catch (error) {
+        console.error('❌ Erro no teste de storage:', error)
+        this.addTestResult(false, `❌ Storage com problema: ${error.message}`)
+      }
+    },
+
+    runDebugTests() {
+      console.log('🔧 Executando testes de debug completos...')
+      
+      try {
+        testBasicFunctionality()
+        testStoreImports()
+        this.addTestResult(true, '🔧 Testes de debug executados - veja o console')
+      } catch (error) {
+        console.error('❌ Erro nos testes de debug:', error)
+        this.addTestResult(false, `❌ Erro nos testes: ${error.message}`)
       }
     },
     

@@ -50,7 +50,7 @@ export const usePatientStore = defineStore('patient', {
 
         // Create patient object with required fields
         const patient = {
-          id: `patient_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          id: `patient_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name: patientData.name.trim(),
           cid: patientData.cid ? patientData.cid.trim().toUpperCase() : '',
           priority: patientData.priority || 'normal',

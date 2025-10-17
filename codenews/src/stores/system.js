@@ -15,21 +15,32 @@ export const useSystemStore = defineStore('system', {
     initialize() {
       if (this.isInitialized) return
 
-      // Load all stores from storage
-      const queueStore = useQueueStore()
-      const patientStore = usePatientStore()
-      const triageStore = useTriageStore()
-      const careStore = useCareStore()
+      console.log('🚀 Inicializando sistema...')
 
-      queueStore.loadFromStorage()
-      patientStore.loadFromStorage()
-      triageStore.loadFromStorage()
-      careStore.loadFromStorage()
+      try {
+        // Load all stores from storage
+        const queueStore = useQueueStore()
+        const patientStore = usePatientStore()
+        const triageStore = useTriageStore()
+        const careStore = useCareStore()
 
-      // Start periodic synchronization
-      this.startSync()
-      
-      this.isInitialized = true
+        console.log('📦 Carregando stores...')
+        queueStore.loadFromStorage()
+        patientStore.loadFromStorage()
+        triageStore.loadFromStorage()
+        careStore.loadFromStorage()
+
+        console.log('✅ Stores carregados')
+
+        // Start periodic synchronization
+        this.startSync()
+        
+        this.isInitialized = true
+        console.log('✅ Sistema inicializado com sucesso')
+      } catch (error) {
+        console.error('❌ Erro na inicialização do sistema:', error)
+        throw error
+      }
     },
 
     // Start periodic synchronization between modules
