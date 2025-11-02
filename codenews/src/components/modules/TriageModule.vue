@@ -56,14 +56,16 @@
                   
                   <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
                     <div>
-                      <span class="font-medium">CID:</span>
-                      {{ patient.cid || 'Não informado' }}
+                      <span class="font-medium">CPF:</span>
+                      {{ formatCpf(patient.cpf) || 'Não informado' }}
                     </div>
                     <div>
                       <span class="font-medium">Cadastrado:</span>
                       {{ formatTime(patient.registeredAt) }}
                     </div>
                   </div>
+                  
+                  <!-- CID will be added during triage process, not displayed here -->
                   
                   <!-- Risk Classification based on CID -->
                   <div v-if="patient.cid" class="mt-2">
@@ -125,7 +127,7 @@
               <h3 class="font-semibold text-gray-800 mb-2">Informações Básicas</h3>
               <div class="space-y-2 text-sm">
                 <div><span class="font-medium">Nome:</span> {{ selectedPatient.name }}</div>
-                <div><span class="font-medium">CID:</span> {{ selectedPatient.cid || 'Não informado' }}</div>
+                <div><span class="font-medium">CPF:</span> {{ formatCpf(selectedPatient.cpf) || 'Não informado' }}</div>
                 <div><span class="font-medium">Prioridade:</span> 
                   <span :class="[
                     'px-2 py-1 rounded-full text-xs font-medium ml-1',
@@ -225,16 +227,11 @@
           <div class="bg-gray-50 rounded-lg p-4 mb-6">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div><span class="font-medium">Paciente:</span> {{ selectedPatient.name }}</div>
-              <div><span class="font-medium">CID:</span> {{ selectedPatient.cid || 'N/A' }}</div>
-              <div><span class="font-medium">Prioridade:</span> {{ selectedPatient.priority === 'preferential' ? 'Preferencial' : 'Normal' }}</div>
-              <div><span class="font-medium">Risco CID:</span> 
-                <span :class="[
-                  'px-2 py-1 rounded-full text-xs font-medium',
-                  getRiskClassColor(getCidRiskClassification(selectedPatient.cid))
-                ]">
-                  {{ getRiskClassLabel(getCidRiskClassification(selectedPatient.cid)) }}
-                </span>
+              <div><span class="font-medium">CPF:</span> {{ formatCpf(selectedPatient.cpf) || 'N/A' }}</div>
+              <div><span class="font-medium">Prioridade:</span> 
+                {{ selectedPatient.priority === 'preferential' ? 'Preferencial' : 'Normal' }}
               </div>
+              <!-- CID and risk classification will be determined during triage -->
             </div>
           </div>
 
@@ -813,6 +810,12 @@ export default {
         low: 'BAIXO RISCO'
       }
       return labels[riskClass] || 'NÃO CLASSIFICADO'
+    },
+    
+    formatCpf(cpf) {
+      if (!cpf || cpf.length !== 11) return cpf
+      
+      return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
     }
   }
 }

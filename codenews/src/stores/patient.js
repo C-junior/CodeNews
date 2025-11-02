@@ -43,6 +43,11 @@ export const usePatientStore = defineStore('patient', {
           throw new Error(nameError)
         }
 
+        // CPF validation
+        if (!patientData.cpf || patientData.cpf.length !== 11) {
+          throw new Error('CPF é obrigatório e deve ter 11 dígitos')
+        }
+
         const cidError = validateCid(patientData.cid)
         if (cidError) {
           throw new Error(cidError)
@@ -52,8 +57,9 @@ export const usePatientStore = defineStore('patient', {
         const patient = {
           id: `patient_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name: patientData.name.trim(),
-          cid: patientData.cid ? patientData.cid.trim().toUpperCase() : '',
-          priority: patientData.priority || 'normal',
+          cpf: patientData.cpf, // Store only numbers
+          cid: patientData.cid ? patientData.cid.trim().toUpperCase() : '', // Will be set in triage
+          priority: patientData.priority || 'normal', // Priority will be set based on password called
           registeredAt: new Date().toISOString(),
           status: 'waiting' // 'waiting', 'reception', 'triage', 'care', 'completed'
         }
@@ -208,7 +214,13 @@ export const usePatientStore = defineStore('patient', {
             patient.id && 
             patient.name && 
             typeof patient.status === 'string'
-          )
+          ).map(patient => {
+            // Ensure CPF field exists for existing patients (even if empty)
+            if (!patient.hasOwnProperty('cpf')) {
+              patient.cpf = ''
+            }
+            return patient
+          })
         } else {
           this.patients = []
         }

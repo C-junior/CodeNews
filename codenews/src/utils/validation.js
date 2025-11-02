@@ -12,7 +12,9 @@ export const VALIDATION_PATTERNS = {
   // Username: alphanumeric, underscore, dash (3-20 chars)
   USERNAME: /^[a-zA-Z0-9_-]{3,20}$/,
   // Name: letters, spaces, accents (2-50 chars)
-  NAME: /^[a-zA-ZÀ-ÿ\s]{2,50}$/
+  NAME: /^[a-zA-ZÀ-ÿ\s]{2,50}$/,
+  // CPF: 11 digits format (XXX.XXX.XXX-XX)
+  CPF: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/
 }
 
 // Validation ranges
@@ -167,6 +169,44 @@ export function validateCid(cid) {
     'CID deve seguir o formato: letra + números (ex: J06.9, I21)'
   )
   if (patternError) return patternError
+  
+  return null
+}
+
+/**
+ * Validates CPF (Brazilian individual taxpayer registry)
+ */
+export function validateCpf(cpf) {
+  if (!cpf) return 'CPF é obrigatório'
+  
+  // Remove formatting (dots and dash)
+  const cleanCpf = cpf.replace(/\D/g, '')
+  
+  if (cleanCpf.length !== 11) return 'CPF deve ter 11 dígitos'
+  
+  // Check if all digits are the same (invalid CPF)
+  if (/^(\d)\1{10}$/.test(cleanCpf)) return 'CPF inválido'
+  
+  // Validate checksum
+  let sum = 0
+  let remainder
+  
+  for (let i = 1; i <= 9; i++) {
+    sum += parseInt(cleanCpf.substring(i - 1, i)) * (11 - i)
+  }
+  
+  remainder = (sum * 10) % 11
+  if (remainder === 10 || remainder === 11) remainder = 0
+  if (remainder !== parseInt(cleanCpf.substring(9, 10))) return 'CPF inválido'
+  
+  sum = 0
+  for (let i = 1; i <= 10; i++) {
+    sum += parseInt(cleanCpf.substring(i - 1, i)) * (12 - i)
+  }
+  
+  remainder = (sum * 10) % 11
+  if (remainder === 10 || remainder === 11) remainder = 0
+  if (remainder !== parseInt(cleanCpf.substring(10, 11))) return 'CPF inválido'
   
   return null
 }

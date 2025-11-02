@@ -131,6 +131,28 @@ export const useQueueStore = defineStore('queue', {
         throw handledError
       }
     },
+    
+    updatePasswordPatientId(passwordId, patientId) {
+      try {
+        if (!passwordId) {
+          throw new Error('ID da senha é obrigatório')
+        }
+
+        const password = this.passwords.find(p => p.id === passwordId)
+        if (!password) {
+          throw new Error(`Senha com ID ${passwordId} não encontrada`)
+        }
+
+        password.patientId = patientId
+        this.saveToStorage()
+        
+        return password
+      } catch (error) {
+        const handledError = handleGenericError(error, 'atualizar ID do paciente na senha')
+        logError(handledError, 'QueueStore.updatePasswordPatientId')
+        throw handledError
+      }
+    },
 
     resetQueue() {
       this.passwords = []

@@ -98,7 +98,8 @@ export const useSystemStore = defineStore('system', {
       const receptionPatients = patientStore.receptionPatients
       receptionPatients.forEach(patient => {
         // Check if patient has been processed in reception (has basic data and password was called)
-        if (patient.name && patient.cid) {
+        // Now requiring name and CPF instead of name and CID
+        if (patient.name && patient.cpf) {
           const password = queueStore.passwords.find(p => p.patientId === patient.id)
           if (password && password.status === 'called') {
             // Move to triage queue - this should be done manually by reception staff
@@ -347,7 +348,7 @@ export const useSystemStore = defineStore('system', {
         case 'waiting':
           return false // Must be called first
         case 'reception':
-          return patient.name && patient.cid // Has basic registration
+          return patient.name && patient.cpf // Has basic registration (name and CPF only)
         case 'triage':
           return triage && triage.completed // Triage is completed
         case 'care':

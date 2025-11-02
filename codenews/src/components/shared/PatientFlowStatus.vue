@@ -7,7 +7,7 @@
       <div class="text-sm text-gray-600 mb-1">Paciente</div>
       <div class="font-semibold">{{ flowStatus.patient.name }}</div>
       <div class="text-sm text-gray-600">
-        CID: {{ flowStatus.patient.cid || 'N/A' }} | 
+        CPF: {{ formatCpf(flowStatus.patient.cpf) || 'N/A' }} | 
         Prioridade: {{ flowStatus.patient.priority === 'preferential' ? 'Preferencial' : 'Normal' }}
       </div>
     </div>
@@ -202,6 +202,12 @@ export default {
         hour: '2-digit',
         minute: '2-digit'
       })
+    },
+    
+    formatCpf(cpf) {
+      if (!cpf || cpf.length !== 11) return cpf
+      
+      return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
     }
   }
 }
