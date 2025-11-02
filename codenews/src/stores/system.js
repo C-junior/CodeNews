@@ -47,10 +47,11 @@ export const useSystemStore = defineStore('system', {
     startSync() {
       if (this.syncInterval) return
 
-      // Sync every 2 seconds to keep all modules updated
-      this.syncInterval = setInterval(() => {
-        this.syncSystemState()
-      }, 2000)
+      // Temporarily disabled automatic sync to prevent unwanted transitions
+      // this.syncInterval = setInterval(() => {
+      //   this.syncSystemState()
+      // }, 5000)
+      console.log('⚠️ Automatic sync disabled to prevent unwanted patient transitions')
     },
 
     // Stop synchronization
@@ -85,35 +86,34 @@ export const useSystemStore = defineStore('system', {
       const triageStore = useTriageStore()
       const careStore = useCareStore()
 
+      console.log('🔍 Processing status transitions...')
+      console.log('Patients by status:', {
+        waiting: patientStore.waitingPatients.length,
+        reception: patientStore.receptionPatients.length,
+        triage: patientStore.triagePatients.length,
+        care: patientStore.carePatients.length,
+        completed: patientStore.completedPatients.length
+      })
+
       // 1. Sync patients called in queue to reception status
       const calledPasswords = queueStore.passwords.filter(p => p.status === 'called' && p.patientId)
       calledPasswords.forEach(password => {
         const patient = patientStore.getPatientById(password.patientId)
         if (patient && patient.status === 'waiting') {
+          console.log(`🔄 Moving patient ${patient.name} from waiting to reception`)
           patientStore.updatePatientStatus(patient.id, 'reception')
         }
       })
 
-      // 2. Move patients from reception to triage when they have completed registration
-      const receptionPatients = patientStore.receptionPatients
-      receptionPatients.forEach(patient => {
-        // Check if patient has been processed in reception (has basic data and password was called)
-        // Now requiring name and CPF instead of name and CID
-        if (patient.name && patient.cpf) {
-          const password = queueStore.passwords.find(p => p.patientId === patient.id)
-          if (password && password.status === 'called') {
-            // Move to triage queue - this should be done manually by reception staff
-            // We don't auto-transition here to maintain control
-          }
-        }
-      })
+      // 2. Patients should only move from reception to triage manually via reception module
+      // No automatic transitions here
 
       // 3. Move patients from triage to care when triage is completed
       const triagePatients = patientStore.triagePatients
       triagePatients.forEach(patient => {
         const triage = triageStore.getTriageByPatientId(patient.id)
         if (triage && triage.completed) {
-          // Auto-transition to care when triage is completed
+          console.log(`🔄 Moving patient ${patient.name} from triage to care (triage completed)`)
           patientStore.updatePatientStatus(patient.id, 'care')
         }
       })
@@ -123,7 +123,7 @@ export const useSystemStore = defineStore('system', {
       carePatients.forEach(patient => {
         const appointment = careStore.getAppointmentByPatientId(patient.id)
         if (appointment && appointment.completedAt) {
-          // Mark patient as completed
+          console.log(`✅ Completing patient ${patient.name} (care finished)`)
           patientStore.updatePatientStatus(patient.id, 'completed')
           
           // Also mark their password as completed
@@ -161,7 +161,8 @@ export const useSystemStore = defineStore('system', {
       const careStore = useCareStore()
       const queueStore = useQueueStore()
 
-      console.log(`Processing patient flow: ${patientId} from ${_fromStatus} to ${toStatus}`)
+      const patient = patientStore.getPatientById(patientId)
+      console.log(`🔄 Processing patient flow: ${patient?.name || patientId} from ${_fromStatus} to ${toStatus}`)
 
       // Update patient status
       patientStore.updatePatientStatus(patientId, toStatus)
@@ -204,15 +205,15 @@ export const useSystemStore = defineStore('system', {
             triageStore.completeTriage(triage.id)
           }
 
-          // Initialize care record if it doesn't exist
-          if (!careStore.getAppointmentByPatientId(patientId)) {
-            careStore.createAppointment({
-              patientId,
-              diagnosis: '',
-              outcome: '',
-              notes: ''
-            })
-          }
+          // Don't automatically create care records - let the care module handle this
+          // if (!careStore.getAppointmentByPatientId(patientId)) {
+          //   careStore.createAppointment({
+          //     patientId,
+          //     diagnosis: '',
+          //     outcome: '',
+          //     notes: ''
+          //   })
+          // }
           break
 
         case 'completed':
@@ -281,6 +282,8 @@ export const useSystemStore = defineStore('system', {
 
     // Reset entire system (for testing/demo purposes)
     resetSystem() {
+      console.log('🔄 Resetting entire system...')
+      
       const queueStore = useQueueStore()
       const patientStore = usePatientStore()
       const triageStore = useTriageStore()
@@ -295,14 +298,36 @@ export const useSystemStore = defineStore('system', {
       careStore.appointments = []
       careStore.currentAppointment = null
 
+      // Clear localStorage completely
+      localStorage.removeItem('codenews_queue')
+      localStorage.removeItem('codenews_patients')
+      localStorage.removeItem('codenews_triages')
+      localStorage.removeItem('codenews_appointments')
+
       // Save empty state
       queueStore.saveToStorage()
       patientStore.saveToStorage()
       triageStore.saveToStorage()
       careStore.saveToStorage()
 
-      // Restart sync
-      this.syncSystemState()
+      console.log('✅ System reset complete')
+    },
+
+    // Force reload all stores from storage
+    forceReloadStores() {
+      console.log('🔄 Force reloading all stores...')
+      
+      const queueStore = useQueueStore()
+      const patientStore = usePatientStore()
+      const triageStore = useTriageStore()
+      const careStore = useCareStore()
+
+      queueStore.loadFromStorage()
+      patientStore.loadFromStorage()
+      triageStore.loadFromStorage()
+      careStore.loadFromStorage()
+
+      console.log('✅ Stores reloaded')
     },
 
     // Manual transition methods for module interactions
@@ -346,13 +371,13 @@ export const useSystemStore = defineStore('system', {
     canTransitionPatient(patient, triage, appointment) {
       switch (patient.status) {
         case 'waiting':
-          return false // Must be called first
+          return false // Must be called from queue first
         case 'reception':
-          return patient.name && patient.cpf // Has basic registration (name and CPF only)
+          return patient.name && patient.cpf // Has basic registration data
         case 'triage':
-          return triage && triage.completed // Triage is completed
+          return triage && triage.completed // Triage must be completed
         case 'care':
-          return appointment && appointment.completedAt // Care is completed
+          return appointment && appointment.completedAt // Care must be completed
         case 'completed':
           return false // Already completed
         default:

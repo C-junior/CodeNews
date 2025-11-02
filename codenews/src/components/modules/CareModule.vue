@@ -12,7 +12,7 @@
         ]">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold text-gray-800">
-              Pacientes Triados
+              Pacientes para Atendimento
             </h2>
             <div class="flex items-center space-x-4">
               <div class="text-sm text-gray-600">
@@ -499,7 +499,7 @@ export default {
   
   computed: {
     triagedPatients() {
-      return this.patientStore.getPatientsByStatus('triage')
+      return this.patientStore.getPatientsByStatus('care')
     },
     
     sortedTriagedPatients() {
