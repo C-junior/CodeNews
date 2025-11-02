@@ -14,8 +14,36 @@
             <h2 class="text-2xl font-semibold text-gray-800">
               Pacientes Triados
             </h2>
-            <div class="text-sm text-gray-600">
-              Total: <span class="font-semibold">{{ triagedPatients.length }}</span>
+            <div class="flex items-center space-x-4">
+              <div class="text-sm text-gray-600">
+                Total: <span class="font-semibold">{{ triagedPatients.length }}</span>
+              </div>
+              <div class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                📋 Ordenado por risco
+              </div>
+            </div>
+          </div>
+
+          <!-- Risk Priority Legend -->
+          <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div class="text-sm font-medium text-gray-700 mb-2">Prioridade de Atendimento:</div>
+            <div class="flex flex-wrap gap-2 text-xs">
+              <div class="flex items-center space-x-1">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span>Emergência</span>
+              </div>
+              <div class="flex items-center space-x-1">
+                <div class="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span>Alto Risco</span>
+              </div>
+              <div class="flex items-center space-x-1">
+                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span>Médio Risco</span>
+              </div>
+              <div class="flex items-center space-x-1">
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span>Baixo Risco</span>
+              </div>
             </div>
           </div>
 
@@ -28,16 +56,24 @@
             </div>
             
             <div
-              v-for="patient in sortedTriagedPatients"
+              v-for="(patient, index) in sortedTriagedPatients"
               :key="patient.id"
               :class="[
-                'border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-lg',
+                'border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-lg relative',
                 selectedPatient?.id === patient.id
                   ? 'border-codenews-blue bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : getRiskBorderClass(getPatientTriage(patient.id)?.riskClassification)
               ]"
               @click="selectPatient(patient)"
             >
+              <!-- Priority Indicator -->
+              <div class="absolute top-2 right-2 flex items-center space-x-1">
+                <div :class="[
+                  'w-3 h-3 rounded-full',
+                  getRiskIndicatorColor(getPatientTriage(patient.id)?.riskClassification)
+                ]"></div>
+                <span class="text-xs font-bold text-gray-600">#{{ index + 1 }}</span>
+              </div>
               <div class="flex items-center justify-between">
                 <div class="flex-1">
                   <div class="flex items-center space-x-3 mb-2">
@@ -67,14 +103,22 @@
                   
                   <!-- Triage Info -->
                   <div v-if="getPatientTriage(patient.id)" class="mb-2">
-                    <div class="flex items-center space-x-2">
-                      <span class="text-sm text-gray-600">Classificação de Risco:</span>
-                      <span :class="[
-                        'px-2 py-1 rounded-full text-xs font-medium',
-                        getRiskClassColor(getPatientTriage(patient.id).riskClassification)
-                      ]">
-                        {{ getRiskClassLabel(getPatientTriage(patient.id).riskClassification) }}
-                      </span>
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">Risco:</span>
+                        <span :class="[
+                          'px-3 py-1 rounded-full text-xs font-bold',
+                          getRiskClassColor(getPatientTriage(patient.id).riskClassification)
+                        ]">
+                          {{ getRiskClassLabel(getPatientTriage(patient.id).riskClassification) }}
+                        </span>
+                      </div>
+                      <div v-if="getPatientTriage(patient.id).riskClassification === 'emergency'" class="text-red-600 text-xs font-bold animate-pulse">
+                        🚨 URGENTE
+                      </div>
+                      <div v-else-if="getPatientTriage(patient.id).riskClassification === 'high'" class="text-orange-600 text-xs font-bold">
+                        ⚠️ PRIORITÁRIO
+                      </div>
                     </div>
                     
                     <!-- Vital Signs Summary -->
@@ -84,6 +128,14 @@
                         <div>FC: {{ getPatientTriage(patient.id).vitalSigns.heartRate || 'N/A' }} bpm</div>
                         <div>Temp: {{ getPatientTriage(patient.id).vitalSigns.temperature || 'N/A' }}°C</div>
                         <div>Peso: {{ getPatientTriage(patient.id).vitalSigns.weight || 'N/A' }} kg</div>
+                      </div>
+                    </div>
+
+                    <!-- Waiting Time Alert for Critical Cases -->
+                    <div v-if="shouldShowWaitingAlert(patient)" class="mt-2 text-xs bg-red-100 text-red-800 p-2 rounded border border-red-200">
+                      <div class="flex items-center space-x-1">
+                        <span>⏰</span>
+                        <span class="font-bold">Aguardando há {{ getWaitingTime(patient) }}</span>
                       </div>
                     </div>
                   </div>
@@ -365,25 +417,37 @@
       </div>
 
       <!-- Statistics Section -->
-      <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow-md p-4 text-center">
-          <div class="text-2xl font-bold text-codenews-blue">{{ triagedPatients.length }}</div>
-          <div class="text-sm text-gray-600">Aguardando Atendimento</div>
-        </div>
-        
-        <div class="bg-white rounded-lg shadow-md p-4 text-center">
-          <div class="text-2xl font-bold text-yellow-600">{{ activeAppointments }}</div>
-          <div class="text-sm text-gray-600">Atendimentos em Andamento</div>
-        </div>
-        
-        <div class="bg-white rounded-lg shadow-md p-4 text-center">
-          <div class="text-2xl font-bold text-codenews-green">{{ completedAppointments }}</div>
-          <div class="text-sm text-gray-600">Atendimentos Concluídos</div>
-        </div>
-        
-        <div class="bg-white rounded-lg shadow-md p-4 text-center">
+      <div class="mt-8 grid grid-cols-2 md:grid-cols-6 gap-4">
+        <!-- Risk Distribution -->
+        <div class="bg-white rounded-lg shadow-md p-4 text-center border-l-4 border-red-500">
           <div class="text-2xl font-bold text-red-600">{{ emergencyCount }}</div>
-          <div class="text-sm text-gray-600">Casos de Emergência</div>
+          <div class="text-xs text-gray-600">Emergência</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4 text-center border-l-4 border-orange-500">
+          <div class="text-2xl font-bold text-orange-600">{{ highRiskCount }}</div>
+          <div class="text-xs text-gray-600">Alto Risco</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4 text-center border-l-4 border-yellow-500">
+          <div class="text-2xl font-bold text-yellow-600">{{ mediumRiskCount }}</div>
+          <div class="text-xs text-gray-600">Médio Risco</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4 text-center border-l-4 border-green-500">
+          <div class="text-2xl font-bold text-green-600">{{ lowRiskCount }}</div>
+          <div class="text-xs text-gray-600">Baixo Risco</div>
+        </div>
+        
+        <!-- General Stats -->
+        <div class="bg-white rounded-lg shadow-md p-4 text-center border-l-4 border-blue-500">
+          <div class="text-2xl font-bold text-blue-600">{{ activeAppointments }}</div>
+          <div class="text-xs text-gray-600">Em Atendimento</div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-md p-4 text-center border-l-4 border-gray-500">
+          <div class="text-2xl font-bold text-gray-600">{{ completedAppointments }}</div>
+          <div class="text-xs text-gray-600">Concluídos</div>
         </div>
       </div>
   </div>
@@ -443,19 +507,23 @@ export default {
       const riskPriority = { 'emergency': 4, 'high': 3, 'medium': 2, 'low': 1 }
       
       return [...this.triagedPatients].sort((a, b) => {
-        const aRisk = this.getPatientTriage(a.id)?.riskClassification || 'low'
-        const bRisk = this.getPatientTriage(b.id)?.riskClassification || 'low'
+        const aTriage = this.getPatientTriage(a.id)
+        const bTriage = this.getPatientTriage(b.id)
+        const aRisk = aTriage?.riskClassification || 'low'
+        const bRisk = bTriage?.riskClassification || 'low'
         
-        // First sort by risk priority
+        // First sort by risk priority (highest risk first)
         const riskDiff = (riskPriority[bRisk] || 1) - (riskPriority[aRisk] || 1)
         if (riskDiff !== 0) return riskDiff
         
-        // Then by preferential priority
+        // For same risk level, prioritize by preferential status
         if (a.priority === 'preferential' && b.priority !== 'preferential') return -1
         if (b.priority === 'preferential' && a.priority !== 'preferential') return 1
         
-        // Finally by registration time (older first)
-        return new Date(a.registeredAt) - new Date(b.registeredAt)
+        // For same risk and priority, sort by triage completion time (older first)
+        const aTriageTime = aTriage?.createdAt || a.registeredAt
+        const bTriageTime = bTriage?.createdAt || b.registeredAt
+        return new Date(aTriageTime) - new Date(bTriageTime)
       })
     },
     
@@ -481,6 +549,27 @@ export default {
       return this.triagedPatients.filter(patient => {
         const triage = this.getPatientTriage(patient.id)
         return triage && triage.riskClassification === 'emergency'
+      }).length
+    },
+
+    highRiskCount() {
+      return this.triagedPatients.filter(patient => {
+        const triage = this.getPatientTriage(patient.id)
+        return triage && triage.riskClassification === 'high'
+      }).length
+    },
+
+    mediumRiskCount() {
+      return this.triagedPatients.filter(patient => {
+        const triage = this.getPatientTriage(patient.id)
+        return triage && triage.riskClassification === 'medium'
+      }).length
+    },
+
+    lowRiskCount() {
+      return this.triagedPatients.filter(patient => {
+        const triage = this.getPatientTriage(patient.id)
+        return triage && triage.riskClassification === 'low'
       }).length
     },
     
@@ -712,6 +801,64 @@ export default {
       if (!cpf || cpf.length !== 11) return cpf
       
       return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    },
+
+    getRiskBorderClass(riskClass) {
+      const classes = {
+        'emergency': 'border-red-300 bg-red-50 hover:border-red-400',
+        'high': 'border-orange-300 bg-orange-50 hover:border-orange-400',
+        'medium': 'border-yellow-300 bg-yellow-50 hover:border-yellow-400',
+        'low': 'border-green-300 bg-green-50 hover:border-green-400'
+      }
+      return classes[riskClass] || 'border-gray-200 hover:border-gray-300'
+    },
+
+    getRiskIndicatorColor(riskClass) {
+      const colors = {
+        'emergency': 'bg-red-500',
+        'high': 'bg-orange-500',
+        'medium': 'bg-yellow-500',
+        'low': 'bg-green-500'
+      }
+      return colors[riskClass] || 'bg-gray-400'
+    },
+
+    shouldShowWaitingAlert(patient) {
+      const triage = this.getPatientTriage(patient.id)
+      if (!triage) return false
+      
+      const riskClass = triage.riskClassification
+      const waitingMinutes = this.getWaitingMinutes(patient)
+      
+      // Show alert based on risk level and waiting time
+      const thresholds = {
+        'emergency': 5,   // 5 minutes
+        'high': 15,       // 15 minutes
+        'medium': 30,     // 30 minutes
+        'low': 60         // 60 minutes
+      }
+      
+      return waitingMinutes > (thresholds[riskClass] || 60)
+    },
+
+    getWaitingMinutes(patient) {
+      const triage = this.getPatientTriage(patient.id)
+      const startTime = triage?.createdAt || patient.registeredAt
+      const now = new Date()
+      const start = new Date(startTime)
+      return Math.floor((now - start) / (1000 * 60))
+    },
+
+    getWaitingTime(patient) {
+      const minutes = this.getWaitingMinutes(patient)
+      
+      if (minutes < 60) {
+        return `${minutes} min`
+      } else {
+        const hours = Math.floor(minutes / 60)
+        const remainingMinutes = minutes % 60
+        return `${hours}h ${remainingMinutes}min`
+      }
     }
   }
 }
