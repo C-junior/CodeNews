@@ -128,6 +128,34 @@ export const usePatientStore = defineStore('patient', {
       return this.updatePatient(patientId, { status: newStatus })
     },
 
+    deletePatient(patientId) {
+      try {
+        if (!patientId) {
+          throw new Error('ID do paciente é obrigatório')
+        }
+
+        const patientIndex = this.patients.findIndex(p => p.id === patientId)
+        
+        if (patientIndex !== -1) {
+          const deletedPatient = this.patients[patientIndex]
+          
+          // Remove patient from array
+          this.patients.splice(patientIndex, 1)
+          
+          // Save to localStorage
+          this.saveToStorage()
+          
+          return deletedPatient
+        }
+
+        throw handleNotFoundError('Paciente', patientId)
+      } catch (error) {
+        const handledError = handleGenericError(error, 'excluir paciente')
+        logError(handledError, 'PatientStore.deletePatient')
+        throw handledError
+      }
+    },
+
     getPatientById(patientId) {
       try {
         if (!patientId) {

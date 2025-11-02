@@ -4,6 +4,36 @@
       Módulo de Acolhimento
     </h1>
 
+    <!-- Navigation Tabs -->
+    <div class="mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <button
+            @click="currentView = 'queue'"
+            :class="[
+              'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
+              currentView === 'queue'
+                ? 'border-codenews-blue text-codenews-blue'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Fila de Espera
+          </button>
+          <button
+            @click="goToPatients"
+            :class="[
+              'py-2 px-1 border-b-2 font-medium text-sm transition-colors',
+              currentView === 'patients'
+                ? 'border-codenews-blue text-codenews-blue'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            Gerenciar Pacientes
+          </button>
+        </nav>
+      </div>
+    </div>
+
     <!-- Queue View - Initial State -->
     <div v-if="currentView === 'queue'" class="space-y-6">
       <!-- Queue Management Section -->
@@ -130,23 +160,25 @@
       </div>
     </div>
 
-    <!-- Patient Management View - After calling password -->
+    <!-- Patient Management View -->
     <div v-if="currentView === 'patients'" class="space-y-6">
-      <!-- Header with back button -->
+      <!-- Header -->
       <div class="flex items-center justify-between">
         <h2 class="text-xl lg:text-2xl font-semibold text-gray-800">
-          Pacientes
+          Gerenciar Pacientes
         </h2>
-        <button
-          @click="backToQueue"
-          class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-        >
-          ← Voltar para Fila
-        </button>
+        <div class="flex space-x-3">
+          <button
+            @click="showRegistrationForm = true"
+            class="px-4 py-2 bg-codenews-blue text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            + Novo Paciente
+          </button>
+        </div>
       </div>
 
-      <!-- Current Password Info -->
-      <div v-if="currentPassword" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <!-- Current Password Info (only when called from queue) -->
+      <div v-if="currentPassword && cameFromQueue" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div class="text-center">
           <div class="text-sm text-blue-600 font-medium mb-1">SENHA CHAMADA</div>
           <div class="text-2xl font-bold text-codenews-blue mb-1">
@@ -173,10 +205,11 @@
               />
             </div>
             <button
-              @click="showRegistrationForm = true"
-              class="px-6 py-3 bg-codenews-blue text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+              v-if="!searchTerm"
+              @click="loadAllPatients"
+              class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
             >
-              Cadastrar Paciente
+              Mostrar Todos
             </button>
           </div>
         </div>
@@ -188,12 +221,14 @@
               <tr>
                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Nome</th>
                 <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">CPF</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
+                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">Cadastrado em</th>
                 <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">Ações</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
               <tr v-if="displayedPatients.length === 0">
-                <td colspan="3" class="px-4 py-8 text-center text-gray-500">
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500">
                   {{ searchTerm ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado' }}
                 </td>
               </tr>
@@ -205,18 +240,33 @@
                   {{ formatCpfDisplay(patient.cpf) }}
                 </td>
                 <td class="px-4 py-3">
+                  <span :class="getStatusBadgeClass(patient.status)" class="px-2 py-1 text-xs font-medium rounded-full">
+                    {{ getStatusLabel(patient.status) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-gray-600 text-sm">
+                  {{ formatDate(patient.registeredAt) }}
+                </td>
+                <td class="px-4 py-3">
                   <div class="flex justify-center space-x-2">
                     <button
                       @click="editPatient(patient)"
-                      class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                      class="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
                     >
                       Editar
                     </button>
                     <button
+                      v-if="cameFromQueue"
                       @click="sendPatientToTriage(patient)"
                       class="px-3 py-1 text-sm bg-codenews-green text-white rounded hover:bg-green-700 transition-colors"
                     >
                       Enviar para Triagem
+                    </button>
+                    <button
+                      @click="confirmDeletePatient(patient)"
+                      class="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                    >
+                      Excluir
                     </button>
                   </div>
                 </td>
@@ -299,6 +349,14 @@
               Cancelar
             </button>
             <button
+              v-if="editingPatient"
+              type="button"
+              @click="confirmDeletePatient(editingPatient)"
+              class="py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Excluir
+            </button>
+            <button
               type="submit"
               :disabled="isRegistering || !isFormValid"
               :class="[
@@ -316,6 +374,45 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div class="flex items-center mb-4">
+          <div class="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            Confirmar Exclusão
+          </h3>
+          <p class="text-gray-600 mb-6">
+            Tem certeza que deseja excluir o paciente <strong>{{ patientToDelete?.name }}</strong>?
+            Esta ação não pode ser desfeita.
+          </p>
+        </div>
+
+        <div class="flex space-x-3">
+          <button
+            @click="cancelDelete"
+            class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            @click="deletePatient"
+            :disabled="isDeleting"
+            class="flex-1 py-2 px-4 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            <span v-if="isDeleting">Excluindo...</span>
+            <span v-else>Excluir</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -335,11 +432,15 @@ export default {
   data() {
     return {
       currentView: 'queue', // 'queue' or 'patients'
+      cameFromQueue: false, // Track if came from calling a password
       isCalling: false,
       isRegistering: false,
+      isDeleting: false,
       registrationSuccess: null,
       showRegistrationForm: false,
+      showDeleteConfirmation: false,
       editingPatient: null,
+      patientToDelete: null,
       patientForm: {
         name: '',
         cpf: '',
@@ -450,6 +551,7 @@ export default {
           
           // Switch to patient management view
           this.currentView = 'patients'
+          this.cameFromQueue = true
           
           // Reset search
           this.resetSearch()
@@ -466,8 +568,16 @@ export default {
       }
     },
 
+    goToPatients() {
+      this.currentView = 'patients'
+      this.cameFromQueue = false
+      this.resetSearch()
+      this.closeRegistrationForm()
+    },
+
     backToQueue() {
       this.currentView = 'queue'
+      this.cameFromQueue = false
       this.resetSearch()
       this.closeRegistrationForm()
     },
@@ -475,6 +585,12 @@ export default {
     resetSearch() {
       this.searchTerm = ''
       this.searchResults = []
+    },
+
+    loadAllPatients() {
+      this.searchTerm = ''
+      this.searchResults = []
+      // The computed displayedPatients will show all patients when searchTerm is empty
     },
     
     formatTime(isoString) {
@@ -521,6 +637,53 @@ export default {
       this.showRegistrationForm = false
       this.editingPatient = null
       this.resetForm()
+    },
+
+    confirmDeletePatient(patient) {
+      this.patientToDelete = patient
+      this.showDeleteConfirmation = true
+      // Close registration form if open
+      this.showRegistrationForm = false
+    },
+
+    cancelDelete() {
+      this.showDeleteConfirmation = false
+      this.patientToDelete = null
+    },
+
+    async deletePatient() {
+      if (!this.patientToDelete) return
+
+      this.isDeleting = true
+
+      try {
+        // Check if patient has any associated passwords
+        const associatedPasswords = this.queueStore.passwords.filter(p => p.patientId === this.patientToDelete.id)
+        
+        if (associatedPasswords.length > 0) {
+          // Remove patient association from passwords
+          associatedPasswords.forEach(password => {
+            this.queueStore.updatePasswordPatientId(password.id, null)
+          })
+        }
+
+        // Delete patient from store
+        await this.patientStore.deletePatient(this.patientToDelete.id)
+
+        // Show success notification
+        patientNotifications.deleted(this.patientToDelete.name)
+
+        // Close modal and refresh data
+        this.cancelDelete()
+        this.searchPatients()
+
+      } catch (error) {
+        const handledError = handleGenericError(error, 'excluir paciente')
+        logError(handledError, 'ReceptionModule.deletePatient')
+        notifyError('Erro ao excluir', handledError.message)
+      } finally {
+        this.isDeleting = false
+      }
     },
 
     async sendPatientToTriage(patient) {
@@ -701,6 +864,40 @@ export default {
       } catch (error) {
         console.error('Erro ao criar dados de teste:', error)
       }
+    },
+
+    getStatusLabel(status) {
+      const labels = {
+        waiting: 'Aguardando',
+        reception: 'Acolhimento',
+        triage: 'Triagem',
+        care: 'Atendimento',
+        completed: 'Concluído'
+      }
+      return labels[status] || 'Desconhecido'
+    },
+
+    getStatusBadgeClass(status) {
+      const classes = {
+        waiting: 'bg-gray-100 text-gray-800',
+        reception: 'bg-blue-100 text-blue-800',
+        triage: 'bg-yellow-100 text-yellow-800',
+        care: 'bg-green-100 text-green-800',
+        completed: 'bg-purple-100 text-purple-800'
+      }
+      return classes[status] || 'bg-gray-100 text-gray-800'
+    },
+
+    formatDate(isoString) {
+      if (!isoString) return ''
+      const date = new Date(isoString)
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     }
     
 

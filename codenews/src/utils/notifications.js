@@ -211,6 +211,10 @@ export const patientNotifications = {
     notifySuccess('Paciente atualizado', `Dados de ${patientName} foram atualizados`)
   },
   
+  deleted(patientName) {
+    notifySuccess('Paciente excluído', `${patientName} foi excluído do sistema`)
+  },
+  
   statusChanged(patientName, newStatus) {
     const statusLabels = {
       waiting: 'aguardando',
