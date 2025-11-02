@@ -15,20 +15,20 @@
               Pacientes para Triagem
             </h2>
             <div class="text-sm text-gray-600">
-              Total: <span class="font-semibold">{{ receptionPatients.length }}</span>
+              Total: <span class="font-semibold">{{ triagePatients.length }}</span>
             </div>
           </div>
 
           <!-- Patient Cards -->
           <div class="space-y-4 max-h-96 overflow-y-auto">
-            <div v-if="receptionPatients.length === 0" class="text-center py-12 text-gray-500">
+            <div v-if="triagePatients.length === 0" class="text-center py-12 text-gray-500">
               <div class="text-6xl mb-4">🏥</div>
               <div class="text-lg font-medium mb-2">Nenhum paciente aguardando triagem</div>
               <div class="text-sm">Os pacientes aparecerão aqui após passarem pelo acolhimento</div>
             </div>
             
             <div
-              v-for="patient in receptionPatients"
+              v-for="patient in triagePatients"
               :key="patient.id"
               :class="[
                 'border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-lg',
@@ -501,7 +501,7 @@
       <!-- Statistics Section -->
       <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-lg shadow-md p-4 text-center">
-          <div class="text-2xl font-bold text-codenews-blue">{{ receptionPatients.length }}</div>
+          <div class="text-2xl font-bold text-codenews-blue">{{ triagePatients.length }}</div>
           <div class="text-sm text-gray-600">Aguardando Triagem</div>
         </div>
         
@@ -581,8 +581,8 @@ export default {
   },
   
   computed: {
-    receptionPatients() {
-      return this.patientStore.receptionPatients
+    triagePatients() {
+      return this.patientStore.triagePatients
     },
     
     selectedPatientTriage() {

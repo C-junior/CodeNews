@@ -693,13 +693,8 @@ export default {
           this.queueStore.updatePasswordPatientId(this.currentPassword.id, patient.id)
         }
 
-        // Update patient status to reception first, then triage
-        this.systemStore.processPatientFlow(patient.id, 'waiting', 'reception')
-        
-        // Wait a moment for the state to update, then send to triage
-        setTimeout(() => {
-          this.systemStore.transitionPatientToTriage(patient.id)
-        }, 100)
+        // Update patient status directly to triage
+        this.systemStore.processPatientFlow(patient.id, 'waiting', 'triage')
         
         // Show success notification
         patientNotifications.statusChanged(patient.name, 'triage')
