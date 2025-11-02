@@ -237,6 +237,74 @@
 
           <!-- Vital Signs Form -->
           <form @submit.prevent="saveTriage" class="space-y-6">
+            <!-- CID Section -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 class="font-semibold text-gray-800 mb-3">Diagnóstico Inicial (CID)</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- CID Code -->
+                <div>
+                  <label for="cid" class="block text-sm font-medium text-gray-700 mb-2">
+                    Código CID *
+                  </label>
+                  <input
+                    id="cid"
+                    v-model="triageForm.cid"
+                    type="text"
+                    required
+                    placeholder="Ex: J06.9, I21, R50"
+                    :class="[
+                      'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors',
+                      triageForm.errors.cid 
+                        ? 'border-red-300 focus:border-red-500' 
+                        : 'border-gray-300 focus:border-blue-500'
+                    ]"
+                    @input="validateCid"
+                    @blur="updatePatientCid"
+                  />
+                  <div v-if="triageForm.errors.cid" class="text-red-600 text-sm mt-1">
+                    {{ triageForm.errors.cid }}
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    Formato: Letra + números (ex: J06.9)
+                  </div>
+                </div>
+
+                <!-- CID Risk Classification Preview -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Classificação por CID
+                  </label>
+                  <div class="flex items-center h-10">
+                    <span :class="[
+                      'px-3 py-1 rounded-full text-sm font-medium',
+                      getRiskClassColor(getCidRiskClassification(triageForm.cid))
+                    ]">
+                      {{ getRiskClassLabel(getCidRiskClassification(triageForm.cid)) }}
+                    </span>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    Baseado no código CID informado
+                  </div>
+                </div>
+              </div>
+
+              <!-- Common CID Suggestions -->
+              <div class="mt-4">
+                <div class="text-sm font-medium text-gray-700 mb-2">Códigos CID Comuns:</div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="commonCid in commonCids"
+                    :key="commonCid.code"
+                    type="button"
+                    @click="selectCommonCid(commonCid.code)"
+                    class="px-3 py-1 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    {{ commonCid.code }} - {{ commonCid.description }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Blood Pressure -->
               <div>
@@ -363,10 +431,13 @@
                   <div class="text-sm text-gray-600 mb-1">Baseado no CID:</div>
                   <span :class="[
                     'px-3 py-1 rounded-full text-sm font-medium',
-                    getRiskClassColor(getCidRiskClassification(selectedPatient.cid))
+                    getRiskClassColor(getCidRiskClassification(triageForm.cid))
                   ]">
-                    {{ getRiskClassLabel(getCidRiskClassification(selectedPatient.cid)) }}
+                    {{ getRiskClassLabel(getCidRiskClassification(triageForm.cid)) }}
                   </span>
+                  <div v-if="triageForm.cid" class="text-xs text-gray-500 mt-1">
+                    CID: {{ triageForm.cid }}
+                  </div>
                 </div>
                 <div>
                   <div class="text-sm text-gray-600 mb-1">Classificação Final:</div>
@@ -376,6 +447,9 @@
                   ]">
                     {{ getRiskClassLabel(finalRiskClassification) }}
                   </span>
+                  <div class="text-xs text-gray-500 mt-1">
+                    Baseado em CID + Sinais Vitais
+                  </div>
                 </div>
               </div>
               <div v-if="riskEscalationReason" class="mt-3 text-sm text-orange-700 bg-orange-50 p-2 rounded">
@@ -468,6 +542,7 @@ export default {
       showVitalSignsForm: false,
       isSaving: false,
       triageForm: {
+        cid: '',
         vitalSigns: {
           bloodPressure: '',
           heartRate: null,
@@ -477,6 +552,16 @@ export default {
         notes: '',
         errors: {}
       },
+      commonCids: [
+        { code: 'J06.9', description: 'Infecção respiratória' },
+        { code: 'I21', description: 'Infarto agudo do miocárdio' },
+        { code: 'R50', description: 'Febre' },
+        { code: 'K59.0', description: 'Constipação' },
+        { code: 'M79.3', description: 'Dor muscular' },
+        { code: 'R06.0', description: 'Dispneia' },
+        { code: 'I20', description: 'Angina pectoris' },
+        { code: 'J44.1', description: 'DPOC agudizada' }
+      ],
       riskEscalationReason: ''
     }
   },
@@ -522,13 +607,14 @@ export default {
     finalRiskClassification() {
       if (!this.selectedPatient) return 'low'
       
-      const cidRisk = this.getCidRiskClassification(this.selectedPatient.cid)
+      const cidRisk = this.getCidRiskClassification(this.triageForm.cid)
       return this.triageStore.classifyRisk(this.triageForm.vitalSigns, cidRisk)
     },
     
     isFormValid() {
       const { bloodPressure, heartRate, temperature } = this.triageForm.vitalSigns
-      return bloodPressure && 
+      return this.triageForm.cid &&
+             bloodPressure && 
              heartRate && 
              temperature && 
              Object.keys(this.triageForm.errors).length === 0
@@ -571,10 +657,13 @@ export default {
         // Load existing triage data if available
         const existingTriage = this.selectedPatientTriage
         if (existingTriage) {
+          this.triageForm.cid = this.selectedPatient.cid || ''
           this.triageForm.vitalSigns = { ...existingTriage.vitalSigns }
           this.triageForm.notes = existingTriage.notes || ''
         } else {
           this.resetTriageForm()
+          // Load existing CID from patient if available
+          this.triageForm.cid = this.selectedPatient.cid || ''
         }
         
         // Show vital signs form
@@ -595,6 +684,7 @@ export default {
     
     resetTriageForm() {
       this.triageForm = {
+        cid: '',
         vitalSigns: {
           bloodPressure: '',
           heartRate: null,
@@ -617,11 +707,16 @@ export default {
         await new Promise(resolve => setTimeout(resolve, 500))
         
         const finalRisk = this.finalRiskClassification
-        const cidRisk = this.getCidRiskClassification(this.selectedPatient.cid)
+        const cidRisk = this.getCidRiskClassification(this.triageForm.cid)
         
         // Generate risk escalation reason if risk was elevated
         this.generateRiskEscalationReason(cidRisk, finalRisk)
         
+        // Update patient with CID
+        this.patientStore.updatePatient(this.selectedPatient.id, {
+          cid: this.triageForm.cid.trim().toUpperCase()
+        })
+
         // Create or update triage
         const existingTriage = this.selectedPatientTriage
         let triage
@@ -816,6 +911,41 @@ export default {
       if (!cpf || cpf.length !== 11) return cpf
       
       return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    },
+
+    validateCid() {
+      const cid = this.triageForm.cid
+      delete this.triageForm.errors.cid
+      
+      // Import validation function
+      import('@/utils/validation').then(({ validateCid }) => {
+        const error = validateCid(cid)
+        if (error) {
+          this.triageForm.errors.cid = error
+        }
+        this.triageForm.errors = { ...this.triageForm.errors }
+      })
+    },
+
+    selectCommonCid(cidCode) {
+      this.triageForm.cid = cidCode
+      this.validateCid()
+    },
+
+    updatePatientCid() {
+      // Update patient CID in real-time as user types (optional)
+      if (this.triageForm.cid && !this.triageForm.errors.cid) {
+        try {
+          this.patientStore.updatePatient(this.selectedPatient.id, {
+            cid: this.triageForm.cid.trim().toUpperCase()
+          })
+          // Refresh selected patient data
+          this.selectedPatient = this.patientStore.getPatientById(this.selectedPatient.id)
+        } catch (error) {
+          // Silently fail - will be saved on form submit
+          console.log('CID will be saved on form submit')
+        }
+      }
     }
   }
 }
